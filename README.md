@@ -1,0 +1,142 @@
+# mac-keybindings-windows
+
+macOS keyboard shortcuts on Windows 11, so muscle memory from a Mac keeps working.
+
+| Mac     | Windows key |
+|---------|-------------|
+| Cmd     | Alt         |
+| Option  | Win         |
+| Control | Ctrl        |
+| Rectangle (window snapping) | Win + Alt |
+
+Everything is one [AutoHotkey v2](https://www.autohotkey.com/) script, plus a PowerShell 7 setup that gives Windows Terminal an iTerm + oh-my-zsh feel.
+
+## Files
+
+| File | What it does |
+|------|--------------|
+| `MacKeys.ahk` | All the key remapping. Runs at login. |
+| `MacKeys.ps1` | PSReadLine keys for the terminal: Ctrl+A/E/K/U/W, and the Cmd+K clear handler. |
+| `Shell.ps1` | PowerShell 7 setup: loads the two files above, Oh My Posh prompt, zoxide, history suggestions, posh-git, Terminal-Icons, PSFzf. |
+| `Aliases.ps1` | `l` / `ll` / `la` and oh-my-zsh git shorthands (`gst`, `gco`, `gpsup`, ...). |
+| `windows-terminal/settings.json` | Windows Terminal settings snapshot (default profile, Nerd Font, keybindings). |
+
+## Shortcuts
+
+### Everywhere
+
+| Keys | Action |
+|------|--------|
+| Alt + any letter/digit/symbol | Ctrl + that key (Cmd = Ctrl), with or without Shift |
+| Alt + Click / Alt + Shift + Click | Ctrl + Click / Ctrl + Shift + Click |
+| Alt + Left / Right | Start / end of line (+ Shift selects) |
+| Alt + Up / Down | Start / end of document (+ Shift selects) |
+| Alt + Backspace | Delete to start of line |
+| Win + Left / Right | Previous / next word (+ Shift selects) |
+| Win + Backspace / Delete | Delete previous / next word |
+| Win + Up / Down | Page up / down |
+| Ctrl + A / E / K | Start of line / end of line / delete to end of line (outside terminals) |
+| Alt + Q | Quit app (closes all its windows) |
+| Alt + H | Hide app (minimizes all its windows) |
+| Alt + M | Minimize |
+| Alt + G / Alt + Shift + G | Find next / previous |
+| Alt + Shift + Z | Redo |
+| Alt + Shift + [ / ] | Previous / next tab |
+| Alt + Shift + 3 | Full-screen screenshot (saved) |
+| Alt + Shift + 4 or X | Region screenshot (Snipping Tool) |
+| Alt + E | File Explorer |
+| Alt + Ctrl + F | Full screen |
+| Alt + Ctrl + Q | Lock screen |
+| Alt + Ctrl + Space | Emoji picker |
+| Win + Alt + Esc | Task Manager (Force Quit) |
+| Win + Alt + I | Developer tools |
+| Win + Alt + F | Find and replace |
+| Ctrl + Left / Right | Previous / next virtual desktop (Spaces) |
+| Ctrl + Up | Task View (Mission Control) |
+| Win + Alt + Left / Right / Up / Down | Snap left / right, maximize, restore |
+| Win + Alt + Enter | Maximize |
+| Win + Alt + Shift + Left / Right | Move window to the other monitor |
+
+Tapping Alt alone does not open the menu bar, and tapping Win alone does not open Start. While the Alt+Tab switcher is open, every remap is paused so arrows and clicks reach the switcher.
+
+### Windows Terminal (iTerm-style)
+
+| Keys | Action |
+|------|--------|
+| Alt + C / V / A | Copy / paste / select all (Alt+C never sends an interrupt) |
+| Alt + T / N / W | New tab / new window / close pane or tab |
+| Alt + 1..9 | Switch to tab 1..9 |
+| Alt + F | Find |
+| Alt + K | Clear screen and scrollback |
+| Alt + D / Alt + Shift + D | Split pane right / down |
+| Alt + [ / ] | Focus pane left / right |
+| Alt + Left / Right | Start / end of line |
+| Alt + Up / Down | Scroll to top / bottom |
+| Alt + Backspace | Delete to start of line |
+| Win + Backspace | Delete previous word |
+
+### File Explorer and browsers
+
+| Keys | Action |
+|------|--------|
+| Alt + [ / ] | Back / forward |
+| Alt + Up | Enclosing folder (Explorer) |
+| Alt + Down | Open selection (Explorer) |
+| Alt + Backspace | Move to Recycle Bin (Explorer) |
+| Alt + Shift + J | Downloads (Chrome) |
+
+### Left to PowerToys
+
+| Keys | PowerToys module |
+|------|------------------|
+| Alt + Space | Command Palette (Spotlight) |
+| Alt + \` / Alt + Shift + \` | Alt Window Cycle (switch between windows of the same app) |
+
+PowerToys Keyboard Manager is turned off: all remapping lives in `MacKeys.ahk`.
+
+## Setup on a new machine
+
+1. Install the tools:
+
+   ```powershell
+   winget install AutoHotkey.AutoHotkey Microsoft.PowerShell Microsoft.WindowsTerminal JanDeDobbeleer.OhMyPosh ajeetdsouza.zoxide junegunn.fzf
+   oh-my-posh font install meslo
+   ```
+
+   Then, in PowerShell 7:
+
+   ```powershell
+   Install-PSResource posh-git, Terminal-Icons, PSFzf
+   ```
+
+2. Clone this repo to `%USERPROFILE%\AutoHotkey`:
+
+   ```powershell
+   git clone https://github.com/karanshah229/mac-keybindings-windows "$HOME\AutoHotkey"
+   ```
+
+3. Start `MacKeys.ahk` at login. The UIA build of AutoHotkey also works in windows running as administrator:
+
+   ```powershell
+   $s = (New-Object -ComObject WScript.Shell).CreateShortcut("$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Startup\MacKeys.lnk")
+   $s.TargetPath = "C:\Program Files\AutoHotkey\v2\AutoHotkey64_UIA.exe"
+   $s.Arguments = "`"$HOME\AutoHotkey\MacKeys.ahk`""
+   $s.Save()
+   Invoke-Item $s.FullName
+   ```
+
+4. Load the shell setup from your PowerShell profiles (open each with `notepad $PROFILE`):
+
+   - PowerShell 7: `. "$HOME\AutoHotkey\Shell.ps1"`
+   - Windows PowerShell 5.1 (optional, keys only): `. "$HOME\AutoHotkey\MacKeys.ps1"`
+
+5. Windows Terminal: copy the relevant parts of `windows-terminal/settings.json` into your own settings (Ctrl + Shift + , opens the file). The important parts are the PowerShell 7 default profile and `"font": { "face": "MesloLGM Nerd Font" }`.
+
+6. In PowerToys, turn off Keyboard Manager, and set Command Palette to Alt + Space.
+
+## Notes
+
+- Hotkeys are matched in file order: app-specific rules first, then global rules, then the generic "Cmd = Ctrl" rule. To override a shortcut for one app, add it to the app-specific section at the top of `MacKeys.ahk`.
+- Windows Terminal drops its text selection on any key press, including the invisible key AutoHotkey uses to stop Alt from opening menus. Terminal hotkeys therefore use `TermSend`, which skips that key.
+- Alt + K in the terminal sends Ctrl + F12. `MacKeys.ps1` binds that key to run `Clear-Host`, which clears the screen and scrollback without leaving the prompt out of sync. `Clear-Host` runs from this key are kept out of history.
+- `Aliases.ps1` removes the built-in PowerShell aliases `gc`, `gcb`, `gcm`, `gl`, `gm` and `gp` so the git names work. The full cmdlet names (`Get-Content`, ...) still work.
