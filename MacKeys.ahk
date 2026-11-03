@@ -101,6 +101,12 @@ global altTabOpen := false
 #HotIf !altTabOpen && WinActive("ahk_exe chrome.exe")
 !+j::Send "^j"
 
+; --- Microsoft Teams -----------------------------------------------------
+; Cmd+E (search) is File Explorer here. Enter = new line / Cmd+Enter = send
+; is Teams' own setting: Settings > Chats and channels > "press Enter to".
+#HotIf !altTabOpen && WinActive("ahk_exe ms-teams.exe")
+!+f::Send "^e"             ; search
+
 ; --- Control + A / E / K: line editing outside terminals -----------------
 ; Terminals get these keys untouched (readline handles them).
 #HotIf !altTabOpen && !WinActive("ahk_group Terminals")
@@ -168,10 +174,11 @@ global altTabOpen := false
 ; Windows are moved directly: sending Win+arrows while Alt is held only
 ; worked some of the time.
 #!Enter::MaximizeWindow()
-#!Up::MaximizeWindow()
 #!Left::SnapWindow("left")       ; left half
 #!Right::SnapWindow("right")     ; right half
-#!Down::RestoreWindow()          ; back to the size before snapping / minimize
+#!Up::SnapWindow("top")          ; top half
+#!Down::SnapWindow("bottom")     ; bottom half
+#!Backspace::RestoreWindow()     ; back to the size before snapping / maximizing
 #!+Left::MoveToMonitor(-1)       ; previous monitor
 #!+Right::MoveToMonitor(1)       ; next monitor
 
@@ -246,8 +253,11 @@ IsAppWindow(hwnd) {
 ; --- Window management ---------------------------------------------------
 ; Coordinates are physical pixels (per-monitor DPI aware), so mixed-scaling
 ; monitors line up. savedRects remembers each window's size before its first
-; snap, for RestoreWindow.
+; snap, for RestoreWindow; lastSnaps remembers each window's last snap, so
+; pressing the same half again moves it to the monitor in that direction,
+; like Rectangle.
 global savedRects := Map()
+global lastSnaps := Map()
 
 ArrangeableWindow() {
     hwnd := WinExist("A")
@@ -265,12 +275,59 @@ SnapWindow(side) {
     if !hwnd := ArrangeableWindow()
         return
     old := DllCall("SetThreadDpiAwarenessContext", "ptr", -4, "ptr")
-    if !savedRects.Has(hwnd) && !WinGetMinMax(hwnd)
+    if WinGetMinMax(hwnd)
+        WinRestore hwnd
+    if !savedRects.Has(hwnd)
         savedRects[hwnd] := FrameRect(hwnd)
-    MonitorGetWorkArea WindowMonitor(hwnd), &l, &t, &r, &b
-    half := (r - l) // 2
-    MoveFrame hwnd, side = "left" ? l : l + half, t, side = "left" ? half : r - l - half, b - t
+    ; Same half again, and the window hasn't moved since: the opposite half of
+    ; the monitor in that direction (if there is one).
+    mon := WindowMonitor(hwnd)
+    if lastSnaps.Has(hwnd) && lastSnaps[hwnd].side = side && SameRect(FrameRect(hwnd), lastSnaps[hwnd].rect)
+        && (next := AdjacentMonitor(mon, side)) {
+        mon := next
+        side := Map("left", "right", "right", "left", "top", "bottom", "bottom", "top")[side]
+    }
+    MonitorGetWorkArea mon, &l, &t, &r, &b
+    w := r - l, h := b - t, halfW := w // 2, halfH := h // 2
+    switch side {
+        case "left":   rect := [l, t, halfW, h]
+        case "right":  rect := [l + halfW, t, w - halfW, h]
+        case "top":    rect := [l, t, w, halfH]
+        case "bottom": rect := [l, t + halfH, w, h - halfH]
+    }
+    MoveFrame(hwnd, rect*)
+    if !SameRect(FrameRect(hwnd), rect, 0)  ; again, if a monitor change made the app rescale itself
+        MoveFrame(hwnd, rect*)
+    lastSnaps[hwnd] := {side: side, rect: FrameRect(hwnd)}
     DllCall "SetThreadDpiAwarenessContext", "ptr", old, "ptr"
+}
+
+; Monitor touching the given side ("left", "right", "top", "bottom") of
+; monitor mon, or 0. If several touch it, the one sharing the longest edge.
+AdjacentMonitor(mon, side) {
+    MonitorGet mon, &l, &t, &r, &b
+    best := 0, bestOverlap := 0
+    Loop MonitorGetCount() {
+        if A_Index = mon
+            continue
+        MonitorGet A_Index, &l2, &t2, &r2, &b2
+        switch side {
+            case "left":   touching := Abs(r2 - l) <= 2, overlap := Min(b, b2) - Max(t, t2)
+            case "right":  touching := Abs(l2 - r) <= 2, overlap := Min(b, b2) - Max(t, t2)
+            case "top":    touching := Abs(b2 - t) <= 2, overlap := Min(r, r2) - Max(l, l2)
+            case "bottom": touching := Abs(t2 - b) <= 2, overlap := Min(r, r2) - Max(l, l2)
+        }
+        if touching && overlap > bestOverlap
+            best := A_Index, bestOverlap := overlap
+    }
+    return best
+}
+
+SameRect(a, b, tolerance := 2) {
+    loop 4
+        if Abs(a[A_Index] - b[A_Index]) > tolerance
+            return false
+    return true
 }
 
 RestoreWindow() {
@@ -283,8 +340,6 @@ RestoreWindow() {
         rect := savedRects.Delete(hwnd)
         MoveFrame(hwnd, rect*)
         DllCall "SetThreadDpiAwarenessContext", "ptr", old, "ptr"
-    } else {
-        WinMinimize hwnd
     }
 }
 
@@ -361,12 +416,10 @@ MoveFrame(hwnd, x, y, w, h) {
 ; to CaretGetPos, so the focused element is also checked via UI Automation:
 ; an Edit control, or anything with an editable value (e.g. contenteditable).
 TextFieldFocused() {
-    static uia := ComObject("{ff48dba4-60ef-4201-aa87-54103eef594e}", "{30cbe57d-d9d0-452a-ab13-7ac5ac4825ee}")
     if CaretGetPos()
         return true
     try {
-        ComCall 8, uia, "ptr*", &p := 0     ; IUIAutomation::GetFocusedElement
-        el := ComValue(13, p)
+        el := FocusedElement()
         if UiaProperty(el, 30003) = 50004   ; ControlType = Edit
             return true
         return UiaProperty(el, 30043) && !UiaProperty(el, 30046)   ; ValuePattern, not read-only
@@ -374,11 +427,17 @@ TextFieldFocused() {
     return false
 }
 
+FocusedElement() {
+    static uia := ComObject("{ff48dba4-60ef-4201-aa87-54103eef594e}", "{30cbe57d-d9d0-452a-ab13-7ac5ac4825ee}")
+    ComCall 8, uia, "ptr*", &p := 0     ; IUIAutomation::GetFocusedElement
+    return ComValue(13, p)
+}
+
 UiaProperty(el, id) {
     v := Buffer(24, 0)
     ComCall 10, el, "int", id, "ptr", v     ; IUIAutomationElement::GetCurrentPropertyValue
     vt := NumGet(v, 0, "ushort")
-    val := vt = 3 ? NumGet(v, 8, "int") : vt = 11 ? NumGet(v, 8, "short") != 0 : ""
+    val := vt = 3 ? NumGet(v, 8, "int") : vt = 11 ? NumGet(v, 8, "short") != 0 : vt = 8 && NumGet(v, 8, "ptr") ? StrGet(NumGet(v, 8, "ptr")) : ""
     DllCall "OleAut32\VariantClear", "ptr", v
     return val
 }

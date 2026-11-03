@@ -55,8 +55,10 @@ Everything is one [AutoHotkey v2](https://www.autohotkey.com/) script, plus a Po
 | Ctrl + Left / Right | Previous / next virtual desktop (Spaces) |
 | Ctrl + Up | Task View (Mission Control) |
 | Win + Alt + Left / Right | Left / right half of the screen |
-| Win + Alt + Up or Enter | Maximize |
-| Win + Alt + Down | Back to the size before snapping or maximizing; otherwise minimize |
+| Win + Alt + Up / Down | Top / bottom half of the screen |
+| (press the same one again) | Move to the monitor in that direction, on its opposite half (e.g. top half → bottom half of the screen above), like Rectangle |
+| Win + Alt + Enter | Maximize |
+| Win + Alt + Backspace | Back to the size before snapping |
 | Win + Alt + Shift + Left / Right | Move window to the previous / next monitor |
 
 Tapping Alt alone does not open the menu bar, and tapping Win alone does not open Start. While the Alt+Tab switcher is open, every remap is paused so arrows and clicks reach the switcher.
@@ -87,6 +89,13 @@ Tapping Alt alone does not open the menu bar, and tapping Win alone does not ope
 | Alt + Down | Open selection (Explorer) |
 | Alt + Backspace | Move to Recycle Bin (Explorer) |
 | Alt + Shift + J | Downloads (Chrome) |
+
+### Microsoft Teams
+
+| Keys | Action |
+|------|--------|
+| Alt + Shift + F | Search (Alt + E stays File Explorer) |
+| Alt + Enter | Send message, with Teams' Settings > Chats and channels > "When writing a message, press Enter to" set to "Start a new line" |
 
 ### Left to PowerToys
 
