@@ -146,6 +146,8 @@ PowerToys Keyboard Manager is turned off: all remapping lives in `MacKeys.ahk`.
 
 6. In PowerToys, turn off Keyboard Manager, and set Command Palette to Alt + Space.
 
+7. If you use [Ditto](https://github.com/sabrogden/Ditto) (`winget install Ditto.Ditto`), clear its own shortcut in Options > Keyboard Shortcuts. Its default, Ctrl + Shift + C, is what Alt + C sends to copy in Windows Terminal. Alt + Shift + C opens Ditto instead.
+
 ## Notes
 
 - Hotkeys are matched in file order: app-specific rules first, then global rules, then the generic "Cmd = Ctrl" rule. To override a shortcut for one app, add it to the app-specific section at the top of `MacKeys.ahk`.
