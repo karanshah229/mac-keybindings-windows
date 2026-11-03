@@ -45,6 +45,7 @@ Everything is one [AutoHotkey v2](https://www.autohotkey.com/) script, plus a Po
 | Alt + Shift + 3 | Full-screen screenshot (saved) |
 | Alt + Shift + 4 or X | Region screenshot (Snipping Tool) |
 | Alt + E | File Explorer |
+| Alt + Shift + C | [Ditto](https://github.com/sabrogden/Ditto) clipboard history popup |
 | Alt + Ctrl + F | Full screen |
 | Alt + Ctrl + Q | Lock screen |
 | Alt + Ctrl + Space | Emoji picker |
@@ -53,9 +54,10 @@ Everything is one [AutoHotkey v2](https://www.autohotkey.com/) script, plus a Po
 | Win + Alt + F | Find and replace |
 | Ctrl + Left / Right | Previous / next virtual desktop (Spaces) |
 | Ctrl + Up | Task View (Mission Control) |
-| Win + Alt + Left / Right / Up / Down | Snap left / right, maximize, restore |
-| Win + Alt + Enter | Maximize |
-| Win + Alt + Shift + Left / Right | Move window to the other monitor |
+| Win + Alt + Left / Right | Left / right half of the screen |
+| Win + Alt + Up or Enter | Maximize |
+| Win + Alt + Down | Back to the size before snapping or maximizing; otherwise minimize |
+| Win + Alt + Shift + Left / Right | Move window to the previous / next monitor |
 
 Tapping Alt alone does not open the menu bar, and tapping Win alone does not open Start. While the Alt+Tab switcher is open, every remap is paused so arrows and clicks reach the switcher.
 
@@ -80,6 +82,7 @@ Tapping Alt alone does not open the menu bar, and tapping Win alone does not ope
 | Keys | Action |
 |------|--------|
 | Alt + [ / ] | Back / forward |
+| Alt + Left / Right | Back / forward (start / end of line while typing in a text field) |
 | Alt + Up | Enclosing folder (Explorer) |
 | Alt + Down | Open selection (Explorer) |
 | Alt + Backspace | Move to Recycle Bin (Explorer) |

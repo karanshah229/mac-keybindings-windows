@@ -91,6 +91,12 @@ global altTabOpen := false
 ![::Send "!{Left}"
 !]::Send "!{Right}"
 
+; Cmd+Left / Cmd+Right = back / forward too, except while typing in a text
+; field, where they go to the start / end of the line. Checked when the key is
+; pressed rather than in #HotIf, where UI Automation calls are unreliable.
+!Left::Send TextFieldFocused() ? "{Home}" : "!{Left}"
+!Right::Send TextFieldFocused() ? "{End}" : "!{Right}"
+
 ; --- Chrome: Cmd+Shift+J = downloads -------------------------------------
 #HotIf !altTabOpen && WinActive("ahk_exe chrome.exe")
 !+j::Send "^j"
@@ -133,6 +139,7 @@ global altTabOpen := false
 !+4::Run "ms-screenclip:"  ; screenshot: region (Snipping Tool)
 !+x::Run "ms-screenclip:"  ; screenshot: region (your existing shortcut)
 !e::Send "#e"              ; File Explorer (your existing shortcut)
+!+c::Run '"' A_ProgramFiles '\Ditto\Ditto.exe" /Open', A_ProgramFiles '\Ditto'   ; Ditto clipboard history popup
 
 ; --- Cmd + Ctrl / Cmd + Option combos ------------------------------------
 !^f::Send "{F11}"          ; Cmd+Ctrl+F: full screen
@@ -157,14 +164,16 @@ global altTabOpen := false
 #Backspace::Send "^{Backspace}"   ; delete previous word
 #Delete::Send "^{Delete}"         ; delete next word
 
-; --- Win + Alt: window management ----------------------------------------
-#!Enter::Send "#{Up}"      ; maximize
-#!Left::Send "#{Left}"     ; snap left
-#!Right::Send "#{Right}"   ; snap right
-#!Up::Send "#{Up}"         ; maximize
-#!Down::Send "#{Down}"     ; restore / minimize
-#!+Left::Send "#+{Left}"   ; move to monitor on the left
-#!+Right::Send "#+{Right}" ; move to monitor on the right
+; --- Win + Alt: window management (Rectangle) ----------------------------
+; Windows are moved directly: sending Win+arrows while Alt is held only
+; worked some of the time.
+#!Enter::MaximizeWindow()
+#!Up::MaximizeWindow()
+#!Left::SnapWindow("left")       ; left half
+#!Right::SnapWindow("right")     ; right half
+#!Down::RestoreWindow()          ; back to the size before snapping / minimize
+#!+Left::MoveToMonitor(-1)       ; previous monitor
+#!+Right::MoveToMonitor(1)       ; next monitor
 
 #HotIf
 
@@ -232,6 +241,146 @@ IsAppWindow(hwnd) {
     if WinGetTitle(hwnd) = "" || (WinGetExStyle(hwnd) & 0x80)   ; WS_EX_TOOLWINDOW
         return false
     return !DllCall("GetWindow", "Ptr", hwnd, "UInt", 4, "Ptr")  ; skip owned dialogs
+}
+
+; --- Window management ---------------------------------------------------
+; Coordinates are physical pixels (per-monitor DPI aware), so mixed-scaling
+; monitors line up. savedRects remembers each window's size before its first
+; snap, for RestoreWindow.
+global savedRects := Map()
+
+ArrangeableWindow() {
+    hwnd := WinExist("A")
+    if !hwnd || WinActive("ahk_class Progman") || WinActive("ahk_class WorkerW") || WinActive("ahk_class Shell_TrayWnd")
+        return 0
+    return hwnd
+}
+
+MaximizeWindow() {
+    if hwnd := ArrangeableWindow()
+        WinMaximize hwnd
+}
+
+SnapWindow(side) {
+    if !hwnd := ArrangeableWindow()
+        return
+    old := DllCall("SetThreadDpiAwarenessContext", "ptr", -4, "ptr")
+    if !savedRects.Has(hwnd) && !WinGetMinMax(hwnd)
+        savedRects[hwnd] := FrameRect(hwnd)
+    MonitorGetWorkArea WindowMonitor(hwnd), &l, &t, &r, &b
+    half := (r - l) // 2
+    MoveFrame hwnd, side = "left" ? l : l + half, t, side = "left" ? half : r - l - half, b - t
+    DllCall "SetThreadDpiAwarenessContext", "ptr", old, "ptr"
+}
+
+RestoreWindow() {
+    if !hwnd := ArrangeableWindow()
+        return
+    if WinGetMinMax(hwnd) = 1 {
+        WinRestore hwnd
+    } else if savedRects.Has(hwnd) {
+        old := DllCall("SetThreadDpiAwarenessContext", "ptr", -4, "ptr")
+        rect := savedRects.Delete(hwnd)
+        MoveFrame(hwnd, rect*)
+        DllCall "SetThreadDpiAwarenessContext", "ptr", old, "ptr"
+    } else {
+        WinMinimize hwnd
+    }
+}
+
+; Moves the window to the next/previous monitor (ordered top to bottom, then
+; left to right, wrapping around), keeping its relative position and size.
+MoveToMonitor(step) {
+    if !(hwnd := ArrangeableWindow()) || MonitorGetCount() < 2
+        return
+    old := DllCall("SetThreadDpiAwarenessContext", "ptr", -4, "ptr")
+    order := []
+    Loop MonitorGetCount() {
+        MonitorGet A_Index, &l, &t
+        order.Push({n: A_Index, key: (t + 100000) * 1000000 + (l + 100000)})
+    }
+    Loop order.Length - 1 {     ; insertion sort by position
+        i := A_Index + 1
+        while i > 1 && order[i - 1].key > order[i].key
+            tmp := order[i], order[i] := order[i - 1], order[i - 1] := tmp, i--
+    }
+    cur := WindowMonitor(hwnd)
+    for i, m in order
+        if m.n = cur
+            pos := i
+    target := order[Mod(pos - 1 + step + order.Length, order.Length) + 1].n
+    maximized := WinGetMinMax(hwnd) = 1
+    if maximized
+        WinRestore hwnd
+    MonitorGetWorkArea cur, &l1, &t1, &r1, &b1
+    MonitorGetWorkArea target, &l2, &t2, &r2, &b2
+    x := 0, y := 0, w := 0, h := 0
+    FrameRect(hwnd, &x, &y, &w, &h)
+    sx := (r2 - l2) / (r1 - l1), sy := (b2 - t2) / (b1 - t1)
+    MoveFrame hwnd, Round(l2 + (x - l1) * sx), Round(t2 + (y - t1) * sy), Round(w * sx), Round(h * sy)
+    if maximized
+        WinMaximize hwnd
+    DllCall "SetThreadDpiAwarenessContext", "ptr", old, "ptr"
+}
+
+; Monitor containing the centre of the window.
+WindowMonitor(hwnd) {
+    FrameRect(hwnd, &x, &y, &w, &h)
+    cx := x + w // 2, cy := y + h // 2
+    Loop MonitorGetCount() {
+        MonitorGet A_Index, &l, &t, &r, &b
+        if cx >= l && cx < r && cy >= t && cy < b
+            return A_Index
+    }
+    return MonitorGetPrimary()
+}
+
+; Visible frame of a window, without the invisible resize borders Windows
+; adds around it. Returns [x, y, w, h] and also sets the output variables.
+FrameRect(hwnd, &x := 0, &y := 0, &w := 0, &h := 0) {
+    rect := Buffer(16)
+    if DllCall("dwmapi\DwmGetWindowAttribute", "ptr", hwnd, "uint", 9, "ptr", rect, "uint", 16) = 0 {  ; DWMWA_EXTENDED_FRAME_BOUNDS
+        x := NumGet(rect, 0, "int"), y := NumGet(rect, 4, "int")
+        w := NumGet(rect, 8, "int") - x, h := NumGet(rect, 12, "int") - y
+    } else {
+        WinGetPos &x, &y, &w, &h, hwnd
+    }
+    return [x, y, w, h]
+}
+
+; Moves a window so its visible frame is exactly x, y, w, h.
+MoveFrame(hwnd, x, y, w, h) {
+    if WinGetMinMax(hwnd)
+        WinRestore hwnd
+    WinGetPos &wx, &wy, &ww, &wh, hwnd
+    FrameRect(hwnd, &fx, &fy, &fw, &fh)
+    WinMove x - (fx - wx), y - (fy - wy), w + (ww - fw), h + (wh - fh), hwnd
+}
+
+; True while typing in a text field. Chrome and Edge don't report their caret
+; to CaretGetPos, so the focused element is also checked via UI Automation:
+; an Edit control, or anything with an editable value (e.g. contenteditable).
+TextFieldFocused() {
+    static uia := ComObject("{ff48dba4-60ef-4201-aa87-54103eef594e}", "{30cbe57d-d9d0-452a-ab13-7ac5ac4825ee}")
+    if CaretGetPos()
+        return true
+    try {
+        ComCall 8, uia, "ptr*", &p := 0     ; IUIAutomation::GetFocusedElement
+        el := ComValue(13, p)
+        if UiaProperty(el, 30003) = 50004   ; ControlType = Edit
+            return true
+        return UiaProperty(el, 30043) && !UiaProperty(el, 30046)   ; ValuePattern, not read-only
+    }
+    return false
+}
+
+UiaProperty(el, id) {
+    v := Buffer(24, 0)
+    ComCall 10, el, "int", id, "ptr", v     ; IUIAutomationElement::GetCurrentPropertyValue
+    vt := NumGet(v, 0, "ushort")
+    val := vt = 3 ? NumGet(v, 8, "int") : vt = 11 ? NumGet(v, 8, "short") != 0 : ""
+    DllCall "OleAut32\VariantClear", "ptr", v
+    return val
 }
 
 ExplorerFileListFocused() {
