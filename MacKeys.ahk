@@ -104,14 +104,32 @@ EndAltTab() {
 !]::Send "!{Right}"
 
 ; Cmd+Left / Cmd+Right = back / forward too, except while typing in a text
-; field, where they go to the start / end of the line. Checked when the key is
-; pressed rather than in #HotIf, where UI Automation calls are unreliable.
-!Left::Send TextFieldFocused() ? "{Home}" : "!{Left}"
-!Right::Send TextFieldFocused() ? "{End}" : "!{Right}"
+; field or in Word / Excel / PowerPoint on the web, where they go to the start
+; / end of the line. Checked when the key is pressed rather than in #HotIf,
+; where UI Automation calls are unreliable.
+!Left::Send TextFieldFocused() || OfficeWebApp() ? "{Home}" : "!{Left}"
+!Right::Send TextFieldFocused() || OfficeWebApp() ? "{End}" : "!{Right}"
 
 ; --- Chrome: Cmd+Shift+J = downloads -------------------------------------
 #HotIf !altTabOpen && WinActive("ahk_exe chrome.exe")
 !+j::Send "^j"
+
+; --- Excel (desktop and on the web) --------------------------------------
+; New line in a cell is Alt+Enter here, not the Ctrl+Enter (fill selection)
+; that Cmd+Enter would otherwise become. Option+Enter does it too, as on a Mac.
+; Excel has no Ctrl+Backspace / Ctrl+Delete word delete, so Option+Backspace /
+; Option+Delete select the word first, then delete it.
+; In a browser the tab is checked when the key is pressed (see OfficeWebApp).
+#HotIf !altTabOpen && WinActive("ahk_exe EXCEL.EXE")
+!Enter::Send "!{Enter}"
+#Enter::Send "!{Enter}"
+#Backspace::Send "^+{Left}{Backspace}"
+#Delete::Send "^+{Right}{Delete}"
+#HotIf !altTabOpen && WinActive("ahk_group Browsers")
+!Enter::Send OfficeWebApp() = "Excel" ? "!{Enter}" : "^{Enter}"
+#Enter::Send OfficeWebApp() = "Excel" ? "!{Enter}" : "#{Enter}"
+#Backspace::Send OfficeWebApp() = "Excel" ? "^+{Left}{Backspace}" : "^{Backspace}"
+#Delete::Send OfficeWebApp() = "Excel" ? "^+{Right}{Delete}" : "^{Delete}"
 
 ; --- Microsoft Teams -----------------------------------------------------
 ; Cmd+E (search) is File Explorer here. Enter = new line / Cmd+Enter = send
@@ -432,6 +450,53 @@ MoveFrame(hwnd, x, y, w, h) {
     WinMove x - (fx - wx), y - (fy - wy), w + (ww - fw), h + (wh - fh), hwnd
 }
 
+; "Word", "Excel" or "PowerPoint" when the active browser tab is that Office
+; app on the web, else "". Neither the tab title (just the file name on
+; SharePoint) nor the address (the same doc.aspx for all three) says which,
+; so the page is checked for the app's frame via UI Automation. Results are
+; remembered by window and tab title; "not Office" only for 10 seconds, in
+; case the page was still loading.
+OfficeWebApp() {
+    static apps := Map("WacFrame_Word_0", "Word", "WacFrame_Excel_0", "Excel",
+        "m_excelWebRenderer_ewaCtl_m_ewa", "Excel", "WacFrame_PowerPoint_0", "PowerPoint")
+    static seen := Map()
+    if !hwnd := WinActive("ahk_group Browsers")
+        return ""
+    key := hwnd "|" WinGetTitle(hwnd)
+    if !seen.Has(key) || seen[key].app = "" && A_TickCount - seen[key].time > 10000 {
+        id := UiaFindId(hwnd, apps)
+        seen[key] := {app: id = "" ? "" : apps[id], time: A_TickCount}
+    }
+    return seen[key].app
+}
+
+; The first AutomationId (an HTML id in a browser) of ids, a Map keyed by id,
+; found in the window, or "". One search for all of them.
+UiaFindId(hwnd, ids) {
+    try {
+        ComCall 6, Uia(), "ptr", hwnd, "ptr*", &root := 0     ; IUIAutomation::ElementFromHandle
+        root := ComValue(13, root)
+        cond := 0
+        for id in ids {
+            v := Buffer(24, 0)                                 ; VARIANT (BSTR) id
+            NumPut "ushort", 8, v
+            NumPut "ptr", DllCall("OleAut32\SysAllocString", "wstr", id, "ptr"), v, 8
+            ComCall 23, Uia(), "int", 30011, "ptr", v, "ptr*", &c := 0   ; CreatePropertyCondition(AutomationId)
+            DllCall "OleAut32\VariantClear", "ptr", v
+            c := ComValue(13, c)
+            if cond {
+                ComCall 28, Uia(), "ptr", cond, "ptr", c, "ptr*", &both := 0   ; CreateOrCondition
+                c := ComValue(13, both)
+            }
+            cond := c
+        }
+        ComCall 5, root, "int", 4, "ptr", cond, "ptr*", &el := 0   ; FindFirst(TreeScope_Descendants)
+        if el
+            return UiaProperty(ComValue(13, el), 30011)
+    }
+    return ""
+}
+
 ; True while typing in a text field. Chrome and Edge don't report their caret
 ; to CaretGetPos, so the focused element is also checked via UI Automation:
 ; an Edit control, or anything with an editable value (e.g. contenteditable).
@@ -448,9 +513,13 @@ TextFieldFocused() {
 }
 
 FocusedElement() {
-    static uia := ComObject("{ff48dba4-60ef-4201-aa87-54103eef594e}", "{30cbe57d-d9d0-452a-ab13-7ac5ac4825ee}")
-    ComCall 8, uia, "ptr*", &p := 0     ; IUIAutomation::GetFocusedElement
+    ComCall 8, Uia(), "ptr*", &p := 0     ; IUIAutomation::GetFocusedElement
     return ComValue(13, p)
+}
+
+Uia() {
+    static uia := ComObject("{ff48dba4-60ef-4201-aa87-54103eef594e}", "{30cbe57d-d9d0-452a-ab13-7ac5ac4825ee}")
+    return uia
 }
 
 UiaProperty(el, id) {

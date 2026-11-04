@@ -17,8 +17,9 @@ Everything is one [AutoHotkey v2](https://www.autohotkey.com/) script, plus a Po
 |------|--------------|
 | `MacKeys.ahk` | All the key remapping. Runs at login. |
 | `MacKeys.ps1` | PSReadLine keys for the terminal: Ctrl+A/E/K/U/W, and the Cmd+K clear handler. |
-| `Shell.ps1` | PowerShell 7 setup: loads the two files above, Oh My Posh prompt, zoxide, history suggestions, posh-git, Terminal-Icons, PSFzf. |
+| `Shell.ps1` | PowerShell 7 setup: loads `MacKeys.ps1`, `Aliases.ps1` and `Unix.ps1`, Oh My Posh prompt, zoxide, history suggestions, posh-git, Terminal-Icons, PSFzf. |
 | `Aliases.ps1` | `l` / `ll` / `la` and oh-my-zsh git shorthands (`gst`, `gco`, `gpsup`, ...). |
+| `Unix.ps1` | Mac/Linux commands: see [Terminal commands](#terminal-commands). |
 | `windows-terminal/settings.json` | Windows Terminal settings snapshot (default profile, Nerd Font, keybindings). |
 
 ## Shortcuts
@@ -85,11 +86,20 @@ Tapping Alt alone does not open the menu bar, and tapping Win alone does not ope
 | Keys | Action |
 |------|--------|
 | Alt + [ / ] | Back / forward |
-| Alt + Left / Right | Back / forward (start / end of line while typing in a text field) |
+| Alt + Left / Right | Back / forward (start / end of line while typing in a text field, and always in Word / Excel / PowerPoint on the web) |
 | Alt + Up | Enclosing folder (Explorer) |
 | Alt + Down | Open selection (Explorer) |
 | Alt + Backspace | Move to Recycle Bin (Explorer) |
 | Alt + Shift + J | Downloads (Chrome) |
+
+### Excel (desktop and on the web)
+
+| Keys | Action |
+|------|--------|
+| Alt + Enter / Win + Enter | New line in a cell |
+| Win + Backspace / Win + Delete | Delete the previous / next word while editing a cell (Excel has no Ctrl + Backspace for this) |
+
+Office on the web (Word, Excel, PowerPoint) is recognised by the app's frame in the page, checked via UI Automation when you press the key: on SharePoint and OneDrive neither the tab title nor the address says which app it is. In other web pages Alt + Enter stays Ctrl + Enter.
 
 ### Microsoft Teams
 
@@ -115,12 +125,36 @@ Tapping Alt alone does not open the menu bar, and tapping Win alone does not ope
 
 PowerToys Keyboard Manager is turned off: all remapping lives in `MacKeys.ahk`.
 
+## Terminal commands
+
+`Unix.ps1` makes Mac/Linux commands work in PowerShell 7.
+
+| Commands | Where they come from |
+|----------|----------------------|
+| `grep` `head` `tail` `wc` `less` `sed` `awk` `cut` `tr` `uniq` `xargs` `column` `find` `diff` `touch` `du` `df` `file` `basename` `dirname` `realpath` `unzip` `gzip` `md5sum` `sha256sum` `base64` `env` `date` | GNU versions from Git for Windows, with all their flags (`tail -f`, `grep -r`, `find . -name`). `find` and `diff` replace Windows' `find.exe` and PowerShell's `Compare-Object` alias. |
+| `rm` `ls` `kill` | PowerShell's versions, which also take `rm -rf`, `ls -la` / `-lt` / `-lS` / `-r`, `kill -9`. PowerShell parameters (`-Recurse`, `-Filter`) still work. `pkill <name>` stops processes by name. |
+| `open` | Opens a file in its default app, a folder in Explorer, or a URL. `open` alone opens the current folder. |
+| `pbcopy` / `pbpaste` | `... \| pbcopy` copies to the clipboard; `pbpaste` prints it. |
+| `export NAME=value` / `unset NAME` | Set or remove an environment variable for this session. |
+| `which [-a]` | Path of a program, or what an alias or function is. |
+| `watch [-n 2] <command>` | Re-runs a command every n seconds until Ctrl + C. |
+| `ln [-sf] target [link]` | Hard link, or symbolic link with `-s`. Symbolic links to files need Developer Mode or an Administrator shell; to folders, `ln -s` makes a junction instead. |
+| `jq` `rg` `fd` `make` `kubectl` | Installed with winget (see Setup). |
+| `wget` | GNU `wget2` (winget's `wget` package fails its checksum check). |
+| `btop` / `top` / `htop` | `btop4win`. |
+
+PowerShell quirks to remember with these tools:
+
+- Quote commas and braces: `cut -d ',' -f1`, `awk '{ print $1 }'`.
+- Text piped from PowerShell into them ends in Windows line endings (`'hi' | base64` encodes `hi\r\n`).
+
 ## Setup on a new machine
 
 1. Install the tools:
 
    ```powershell
-   winget install AutoHotkey.AutoHotkey Microsoft.PowerShell Microsoft.WindowsTerminal JanDeDobbeleer.OhMyPosh ajeetdsouza.zoxide junegunn.fzf
+   winget install AutoHotkey.AutoHotkey Microsoft.PowerShell Microsoft.WindowsTerminal Git.Git JanDeDobbeleer.OhMyPosh ajeetdsouza.zoxide junegunn.fzf
+   winget install jqlang.jq BurntSushi.ripgrep.MSVC sharkdp.fd ezwinports.make GNU.Wget2 Kubernetes.kubectl aristocratos.btop4win
    oh-my-posh font install meslo
    ```
 
