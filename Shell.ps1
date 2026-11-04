@@ -8,6 +8,10 @@ if ($Host.Name -ne 'ConsoleHost') { return }
 # ls and git shorthands (l, la, ll, gst, gco, ...)
 . "$PSScriptRoot\Aliases.ps1"
 
+# Mac/Linux commands: GNU tools (grep, tail, find ...), rm -rf / ls -la /
+# kill -9, open, pbcopy, export, which, watch, ln
+. "$PSScriptRoot\Unix.ps1"
+
 # zsh-autosuggestions: grey suggestion from history, accept with Right / End.
 # Syntax highlighting is built into PSReadLine.
 try { Set-PSReadLineOption -PredictionSource History -PredictionViewStyle InlineView } catch {}   # fails when output is redirected

@@ -2,8 +2,8 @@
 
 # --- ls ------------------------------------------------------------------
 Set-Alias -Name l -Value Get-ChildItem
-function ll { Get-ChildItem @args }
-function la { Get-ChildItem -Force @args }   # include hidden files
+function ll { ls @args }        # ls takes Unix flags (-t, -S ...), see Unix.ps1
+function la { ls -a @args }     # include hidden files
 
 # --- git (oh-my-zsh git plugin names) ------------------------------------
 # These PowerShell built-in aliases clash with the git names, so they are
