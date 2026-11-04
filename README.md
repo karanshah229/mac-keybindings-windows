@@ -97,6 +97,14 @@ Tapping Alt alone does not open the menu bar, and tapping Win alone does not ope
 | Alt + Shift + F | Search (Alt + E stays File Explorer) |
 | Alt + Enter | Send message, with Teams' Settings > Chats and channels > "When writing a message, press Enter to" set to "Start a new line" |
 
+### VS Code
+
+| Keys | Action |
+|------|--------|
+| Win + Up / Down | Move line up / down |
+| Win + Shift + Up / Down | Copy line up / down |
+| Win + Click | Add a cursor |
+
 ### Left to PowerToys
 
 | Keys | PowerToys module |
