@@ -67,11 +67,12 @@ Tapping Alt alone does not open the menu bar, and tapping Win alone does not ope
 
 | Keys | Action |
 |------|--------|
-| Alt + C / V / A | Copy / paste / select all (Alt+C never sends an interrupt) |
+| Alt + C / V | Copy / paste (Alt+C never sends an interrupt) |
+| Alt + A | Select the command line, so Backspace or typing replaces it; Alt+C copies it (PowerShell). Ctrl + Shift + A still selects everything on screen |
+| Alt + K | Clear screen and scrollback, keeping what you've typed |
 | Alt + T / N / W | New tab / new window / close pane or tab |
 | Alt + 1..9 | Switch to tab 1..9 |
 | Alt + F | Find |
-| Alt + K | Clear screen and scrollback |
 | Alt + D / Alt + Shift + D | Split pane right / down |
 | Alt + [ / ] | Focus pane left / right |
 | Alt + Left / Right | Start / end of line |
@@ -160,5 +161,5 @@ PowerToys Keyboard Manager is turned off: all remapping lives in `MacKeys.ahk`.
 
 - Hotkeys are matched in file order: app-specific rules first, then global rules, then the generic "Cmd = Ctrl" rule. To override a shortcut for one app, add it to the app-specific section at the top of `MacKeys.ahk`.
 - Windows Terminal drops its text selection on any key press, including the invisible key AutoHotkey uses to stop Alt from opening menus. Terminal hotkeys therefore use `TermSend`, which skips that key.
-- Alt + K in the terminal sends Ctrl + F12. `MacKeys.ps1` binds that key to run `Clear-Host`, which clears the screen and scrollback without leaving the prompt out of sync. `Clear-Host` runs from this key are kept out of history.
+- Alt + K in the terminal sends Ctrl + F12. `MacKeys.ps1` binds that key to clear the screen and scrollback and redraw the prompt at the top, keeping whatever you had typed, like Cmd + K in iTerm.
 - `Aliases.ps1` removes the built-in PowerShell aliases `gc`, `gcb`, `gcm`, `gl`, `gm` and `gp` so the git names work. The full cmdlet names (`Get-Content`, ...) still work.

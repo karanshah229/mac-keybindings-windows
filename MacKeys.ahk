@@ -74,7 +74,7 @@ EndAltTab() {
 #HotIf !altTabOpen && WinActive("ahk_exe WindowsTerminal.exe")
 !c::TermSend "^+c"         ; copy (never sends Ctrl+C / interrupt)
 !v::TermSend "^+v"         ; paste
-!a::TermSend "^+a"         ; select all
+!a::TermSend "^{F11}"      ; select the command line (handler in MacKeys.ps1)
 !t::TermSend "^+t"         ; new tab
 !n::TermSend "^+n"         ; new window
 !w::TermSend "^+w"         ; close pane/tab
