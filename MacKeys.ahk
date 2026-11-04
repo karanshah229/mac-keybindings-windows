@@ -40,8 +40,20 @@ global altTabOpen := false
 
 ~*Tab:: {
     global altTabOpen
-    if GetKeyState("Alt", "P")
+    if GetKeyState("Alt", "P") {
         altTabOpen := true
+        SetTimer EndAltTab, 100
+    }
+}
+; Backup for a missed Alt release (e.g. while a UAC prompt had the keyboard),
+; which would leave every hotkey disabled: the switcher can only be open
+; while Alt is really held.
+EndAltTab() {
+    global altTabOpen
+    if !(DllCall("GetAsyncKeyState", "int", 0x12, "short") & 0x8000) {
+        altTabOpen := false
+        SetTimer , 0
+    }
 }
 ~*Esc:: {
     global altTabOpen
@@ -106,6 +118,14 @@ global altTabOpen := false
 ; is Teams' own setting: Settings > Chats and channels > "press Enter to".
 #HotIf !altTabOpen && WinActive("ahk_exe ms-teams.exe")
 !+f::Send "^e"             ; search
+
+; --- VS Code: Option shortcuts -------------------------------------------
+#HotIf !altTabOpen && WinActive("ahk_exe Code.exe")
+#Up::Send "!{Up}"          ; move line up
+#Down::Send "!{Down}"      ; move line down
+#+Up::Send "!+{Up}"        ; copy line up
+#+Down::Send "!+{Down}"    ; copy line down
+#LButton::Send "!{Click}"  ; add a cursor
 
 ; --- Control + A / E / K: line editing outside terminals -----------------
 ; Terminals get these keys untouched (readline handles them).
