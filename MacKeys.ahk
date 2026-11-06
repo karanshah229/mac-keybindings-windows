@@ -137,6 +137,14 @@ EndAltTab() {
 #HotIf !altTabOpen && WinActive("ahk_exe ms-teams.exe")
 !+f::Send "^e"             ; search
 
+; --- Claude desktop app: Enter = new line, Cmd+Enter = send -------------
+; Only in the prompt box, and not while its / or @ suggestion menu is open,
+; so Enter still picks a suggestion and confirms dialogs. The app has no
+; setting for this.
+#HotIf !altTabOpen && WinActive("ahk_exe claude.exe")
+$Enter::Send ClaudePromptFocused() ? "+{Enter}" : "{Enter}"
+!Enter::Send ClaudePromptFocused() ? "{Enter}" : "^{Enter}"
+
 ; --- VS Code: Option shortcuts -------------------------------------------
 #HotIf !altTabOpen && WinActive("ahk_exe Code.exe")
 #Up::Send "!{Up}"          ; move line up
@@ -495,6 +503,16 @@ UiaFindId(hwnd, ids) {
             return UiaProperty(ComValue(13, el), 30011)
     }
     return ""
+}
+
+; True while typing in the Claude app's prompt box (a ProseMirror editor) with
+; no suggestion menu open (aria expanded=true while it is).
+ClaudePromptFocused() {
+    try {
+        el := FocusedElement()
+        return InStr(UiaProperty(el, 30012), "ProseMirror") && !InStr(UiaProperty(el, 30102), "expanded=true")
+    }
+    return false
 }
 
 ; True while typing in a text field. Chrome and Edge don't report their caret

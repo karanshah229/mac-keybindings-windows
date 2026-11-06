@@ -101,6 +101,15 @@ Tapping Alt alone does not open the menu bar, and tapping Win alone does not ope
 
 Office on the web (Word, Excel, PowerPoint) is recognised by the app's frame in the page, checked via UI Automation when you press the key: on SharePoint and OneDrive neither the tab title nor the address says which app it is. In other web pages Alt + Enter stays Ctrl + Enter.
 
+### Claude desktop app
+
+| Keys | Action |
+|------|--------|
+| Enter | New line in the prompt box |
+| Alt + Enter | Send the prompt |
+
+Only while typing in the prompt box with no `/` or `@` suggestion menu open, so Enter still picks a suggestion and confirms dialogs. The app has no setting for this (its `keybindings.json` support is for the terminal version only).
+
 ### Microsoft Teams
 
 | Keys | Action |
