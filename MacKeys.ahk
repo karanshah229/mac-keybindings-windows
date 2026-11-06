@@ -166,6 +166,8 @@ $Enter::Send ClaudePromptFocused() ? "+{Enter}" : "{Enter}"
 ; --- Mouse ---------------------------------------------------------------
 !LButton::Send "^{Click}"
 !+LButton::Send "^+{Click}"
+!WheelUp::Send "^{WheelUp}"      ; zoom in
+!WheelDown::Send "^{WheelDown}"  ; zoom out
 
 ; --- Cmd + arrows / Backspace: line and document ------------------------
 !Left::Send "{Home}"

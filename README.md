@@ -30,6 +30,7 @@ Everything is one [AutoHotkey v2](https://www.autohotkey.com/) script, plus a Po
 |------|--------|
 | Alt + any letter/digit/symbol | Ctrl + that key (Cmd = Ctrl), with or without Shift |
 | Alt + Click / Alt + Shift + Click | Ctrl + Click / Ctrl + Shift + Click |
+| Alt + scroll wheel | Ctrl + scroll wheel: zoom in / out |
 | Alt + Left / Right | Start / end of line (+ Shift selects) |
 | Alt + Up / Down | Start / end of document (+ Shift selects) |
 | Alt + Backspace | Delete to start of line |
