@@ -21,6 +21,7 @@ Everything is one [AutoHotkey v2](https://www.autohotkey.com/) script, plus a Po
 | `Aliases.ps1` | `l` / `ll` / `la` and oh-my-zsh git shorthands (`gst`, `gco`, `gpsup`, ...). |
 | `Unix.ps1` | Mac/Linux commands: see [Terminal commands](#terminal-commands). |
 | `windows-terminal/settings.json` | Windows Terminal settings snapshot (default profile, Nerd Font, keybindings). |
+| `vscode/keybindings.json` | VS Code keybinding that makes Alt + K clear the terminal. |
 
 ## Shortcuts
 
@@ -125,6 +126,7 @@ Only while typing in the prompt box with no `/` or `@` suggestion menu open, so 
 | Win + Up / Down | Move line up / down |
 | Win + Shift + Up / Down | Copy line up / down |
 | Win + Click | Add a cursor |
+| Alt + K (in the terminal) | Clear screen and scrollback, keeping what you've typed, as in Windows Terminal (needs `vscode/keybindings.json`) |
 
 ### Left to PowerToys
 
@@ -197,9 +199,11 @@ PowerShell quirks to remember with these tools:
 
 5. Windows Terminal: copy the relevant parts of `windows-terminal/settings.json` into your own settings (Ctrl + Shift + , opens the file). The important parts are the PowerShell 7 default profile and `"font": { "face": "MesloLGM Nerd Font" }`.
 
-6. In PowerToys, turn off Keyboard Manager, and set Command Palette to Alt + Space.
+6. VS Code: copy the entries in `vscode/keybindings.json` into your own keybindings (Ctrl + Shift + P > "Preferences: Open Keyboard Shortcuts (JSON)").
 
-7. If you use [Ditto](https://github.com/sabrogden/Ditto) (`winget install Ditto.Ditto`), clear its own shortcut in Options > Keyboard Shortcuts. Its default, Ctrl + Shift + C, is what Alt + C sends to copy in Windows Terminal. Alt + Shift + C opens Ditto instead.
+7. In PowerToys, turn off Keyboard Manager, and set Command Palette to Alt + Space.
+
+8. If you use [Ditto](https://github.com/sabrogden/Ditto) (`winget install Ditto.Ditto`), clear its own shortcut in Options > Keyboard Shortcuts. Its default, Ctrl + Shift + C, is what Alt + C sends to copy in Windows Terminal. Alt + Shift + C opens Ditto instead.
 
 ## Notes
 

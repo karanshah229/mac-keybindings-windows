@@ -1,0 +1,13 @@
+// VS Code keybindings for MacKeys. Copy into your own keybindings.json
+// (Ctrl + Shift + P > "Preferences: Open Keyboard Shortcuts (JSON)").
+[
+    // Alt + K (Cmd + K) arrives as Ctrl + K. In the terminal, pass it on to
+    // the shell as Ctrl + F12, which MacKeys.ps1 binds to clear the screen
+    // and scrollback while keeping what you've typed, as in Windows Terminal.
+    {
+        "key": "ctrl+k",
+        "command": "workbench.action.terminal.sendSequence",
+        "args": { "text": "\u001b[24;5~" },
+        "when": "terminalFocus"
+    }
+]
