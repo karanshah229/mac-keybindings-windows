@@ -151,6 +151,35 @@ PowerShell quirks to remember with these tools:
 - Quote commas and braces: `cut -d ',' -f1`, `awk '{ print $1 }'`.
 - Text piped from PowerShell into them ends in Windows line endings (`'hi' | base64` encodes `hi\r\n`).
 
+### Git shortcuts
+
+`Aliases.ps1` has the [oh-my-zsh git plugin](https://github.com/ohmyzsh/ohmyzsh/tree/master/plugins/git) names, with a few changes (marked *).
+
+| Shortcut | git command |
+|----------|-------------|
+| `g` | `git` |
+| `gs` `gst` `gits`* / `gss` | `status` / `status --short` |
+| `ga` / `gaa` | `add` / `add --all` |
+| `gc` / `gca` | `commit -v` / `commit -v -a` (opens the editor) |
+| `gcm`* `gcmsg` / `gcam` | `commit -m` / `commit -a -m` |
+| `gcane` / `gcamend` | `commit --amend --no-edit` / `commit --amend` |
+| `gundo` | `reset --soft HEAD~1` (undo the last commit, keep the changes staged) |
+| `grh` / `grhh` | `reset` (unstage) / `reset --hard` (discard all uncommitted changes) |
+| `grs` / `gclean` | `restore` / `clean -fd` (delete untracked files and folders) |
+| `gco` / `gcb` / `gcom`* | `checkout` / `checkout -b` / checkout main (or trunk, master) |
+| `gsw` / `gswc` | `switch` / `switch -c` |
+| `gb` / `gba` / `gbd` / `gbdf`* | `branch` / `--all` / `--delete` / `-D` |
+| `gd` / `gds` | `diff` / `diff --staged` |
+| `gf` / `gl` / `gpr` | `fetch` / `pull` / `pull --rebase` |
+| `gp` / `gpf` / `gpsup` | `push` / `push --force-with-lease` / `push --set-upstream origin <current branch>` |
+| `gm` / `grb` / `grbi` / `gcp` | `merge` / `rebase` / `rebase -i` / `cherry-pick` |
+| `gr` / `grv` | `remote` / `remote -v` |
+| `gsta` / `gstp` / `gstl` / `gstd` | `stash push` / `pop` / `list` / `drop` |
+| `glo` / `glog` / `glg` / `gsh` | `log --oneline` / with the branch graph / `log --stat` / `show` |
+| `gcl` | `clone --recurse-submodules` |
+
+\* In oh-my-zsh `gcm` checks out main (here `gcom`), and `gbD` force-deletes a branch (here `gbdf`, since PowerShell names ignore case). `gits` is extra.
+
 ## Setup on a new machine
 
 1. Install the tools:
